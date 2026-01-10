@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Burning Alien World</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+html, body {
+  margin: 0;
+  overflow: hidden;
+  background: radial-gradient(circle at center, #200000, #000);
+}
+
+#hint {
+  position: fixed;
+  top: 15px;
+  left: 15px;
+  color: #ff6600;
+  font-family: monospace;
+  text-shadow: 0 0 10px red;
+  z-index: 10;
+}
+</style>
+</head>
+
+<body>
+<div id="hint">Move mouse and plus Watch it burn 🔥</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+
+<script>
+// The perfect SCENE
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0x000000, 20, 300);
+
+// THE CAMERA res
+const camera = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.1, 1000);
+camera.position.set(0, 5, 20);
+
+// THEN RENDERERING IT BACK
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(devicePixelRatio);
+document.body.appendChild(renderer.domElement);
+
+// THE LIGHTING WITH ANIMATION
+scene.add(new THREE.AmbientLight(0xff3300, 0.6));
+
+const fireLight = new THREE.PointLight(0xff6600, 3, 200);
+fireLight.position.set(0, 20, 20);
+scene.add(fireLight);
+
+// SEEMS LIKE WHITE PARTICLES BUT PRETENDS AS A STARS
+const starsGeo = new THREE.BufferGeometry();
+const starCount = 4000;
+const starPositions = [];
+
+for (let i = 0; i < starCount; i++) {
+  starPositions.push(
+    (Math.random() - 0.5) * 800,
+    (Math.random() - 0.5) * 800,
+    (Math.random() - 0.5) * 800
+  );
+}
+
+starsGeo.setAttribute("position", new THREE.Float32BufferAttribute(starPositions, 3));
+
+const stars = new THREE.Points(
+  starsGeo,
+  new THREE.PointsMaterial({ color: 0xffffff, size: 0.8 })
+);
+scene.add(stars);
+
+// THREE ALIEN WITH LIGHT BLUE COLOR FACE MOVING AROUND
+const alien = new THREE.Group();
+
+const head = new THREE.Mesh(
+  new THREE.SphereGeometry(3, 32, 32),
+  new THREE.MeshStandardMaterial({
+    color: 0x00ffcc,
+    emissive: 0x00ffaa,
+    emissiveIntensity: 1.5
+  })
+);
+
+const eyeMat = new THREE.MeshStandardMaterial({ color: 0x000000 });
+
+const leftEye = new THREE.Mesh(new THREE.SphereGeometry(0.5, 16, 16), eyeMat);
+const rightEye = leftEye.clone();
+
+leftEye.position.set(-1, 0.5, 2.3);
+rightEye.position.set(1, 0.5, 2.3);
+
+alien.add(head, leftEye, rightEye);
+alien.position.set(0, 4, 0);
+scene.add(alien);
+
+//SEEM LIKE BURNING MOONS BUT INVISIBLE UNTILL CLICKED
+function createMoon(x, y, z, r) {
+  const moon = new THREE.Mesh(
+    new THREE.SphereGeometry(r, 32, 32),
+    new THREE.MeshStandardMaterial({
+      color: 0x888888,
+      emissive: 0xff4400,
+      emissiveIntensity: 0.8
+    })
+  );
+  moon.position.set(x, y, z);
+  scene.add(moon);
+  return moon;
+}
+
+const moon1 = createMoon(15, 8, -30, 5);
+const moon2 = createMoon(-20, -5, -40, 7);
+
+// THE FIRE PARTICLES THE MOVING AROUND THE SCREEN UP
+const fireParticles = [];
+const fireGeo = new THREE.SphereGeometry(0.1, 8, 8);
+const fireMat = new THREE.MeshBasicMaterial({ color: 0xff6600 });
+
+for (let i = 0; i < 200; i++) {
+  const p = new THREE.Mesh(fireGeo, fireMat);
+  resetFire(p);
+  scene.add(p);
+  fireParticles.push(p);
+}
+
+function resetFire(p) {
+  p.position.set(
+    (Math.random() - 0.5) * 30,
+    Math.random() * 10,
+    (Math.random() - 0.5) * 30
+  );
+  p.speed = Math.random() * 0.2 + 0.1;
+}
+
+//MOUSE REACTION WHEN HOVERING
+let mouseX = 0, mouseY = 0;
+addEventListener("mousemove", e => {
+  mouseX = (e.clientX / innerWidth - 0.5) * 2;
+  mouseY = (e.clientY / innerHeight - 0.5) * 2;
+});
+
+// ANIMATION ALONG WITH MOVING.
+function animate() {
+  requestAnimationFrame(animate);
+
+  alien.rotation.y += 0.01;
+  alien.position.y = 4 + Math.sin(Date.now() * 0.002) * 0.5;
+
+  camera.position.x += (mouseX * 5 - camera.position.x) * 0.05;
+  camera.position.y += (-mouseY * 3 + 5 - camera.position.y) * 0.05;
+  camera.lookAt(0, 4, 0);
+
+  moon1.rotation.y += 0.002;
+  moon2.rotation.y -= 0.002;
+
+  fireParticles.forEach(p => {
+    p.position.y += p.speed;
+    if (p.position.y > 15) resetFire(p);
+  });
+
+  renderer.render(scene, camera);
+}
+
+animate();
+
+addEventListener("resize", () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+</script>
+</body>
+</html>
